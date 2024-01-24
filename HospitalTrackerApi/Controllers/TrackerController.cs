@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace HospitalTrackerApi.Controllers
 {
     [ApiController]
-    [Route("[action]")]
     public class TrackerController : ControllerBase
     {
         private readonly ITrackerService _trackerService;
@@ -14,7 +13,7 @@ namespace HospitalTrackerApi.Controllers
         }
 
 
-        [HttpGet("PersonLocation")]
+        [HttpGet("/PersonLocations")]
         public async Task<IActionResult> GetPersonLocationsAsync()
         {
             return Ok(await _trackerService.GetPersonLocations());
