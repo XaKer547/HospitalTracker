@@ -6,11 +6,11 @@
         private readonly ILogger<TimedHostedService> _logger;
         private Timer _timer = null!;
 
-        private readonly IServiceProvider _serviceProvider;
-        public TimedHostedService(ILogger<TimedHostedService> logger, IServiceProvider serviceProvider)
+        private readonly ITrackerService _trackerService;
+        public TimedHostedService(ILogger<TimedHostedService> logger, ITrackerService trackerService)
         {
             _logger = logger;
-            _serviceProvider = serviceProvider;
+            _trackerService = trackerService;
         }
 
         public Task StartAsync(CancellationToken stoppingToken)
@@ -26,12 +26,7 @@
         {
             var count = Interlocked.Increment(ref executionCount);
 
-            using (IServiceScope scope = _serviceProvider.CreateScope())
-            {
-                var trackerService = scope.ServiceProvider.GetRequiredService<ITrackerService>();
-
-                await trackerService.ChangePositions();
-            }
+            await _trackerService.ChangePositions();
 
             _logger.LogInformation("Timed Hosted Service is working. {currentdate} PeopleMoved: {Count} times", DateTime.Now.ToString(), count);
         }
