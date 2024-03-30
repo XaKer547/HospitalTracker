@@ -2,6 +2,7 @@ using HospitalTrackerApi.Data;
 using HospitalTrackerApi.Data.Seeder;
 using HospitalTrackerApi.Services;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace HospitalTrackerApi
 {
@@ -10,6 +11,11 @@ namespace HospitalTrackerApi
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .CreateLogger();
+
+            builder.Host.UseSerilog();
 
             builder.Services.AddControllers();
 
@@ -19,7 +25,7 @@ namespace HospitalTrackerApi
 
             builder.Services.AddDbContext<HospitalTrackerDbContext>(options =>
             {
-                options.UseSqlite("Data Source=hospital.db");
+                options.UseSqlite("Data Source=C:\\Users\\Public\\hospital.db");
             });
 
             builder.Services.AddScoped<ITrackerService, TrackerService>();
@@ -28,16 +34,13 @@ namespace HospitalTrackerApi
 
             var app = builder.Build();
 
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
+            
             app.MapControllers();
 
             using (var scope = app.Services.CreateScope())
@@ -46,7 +49,9 @@ namespace HospitalTrackerApi
 
                 var seeder = new HospitalTrackerDbSeeder();
 
-                seeder.Seed(context);
+                seeder.Seed(context)
+                    .GetAwaiter()
+                    .GetResult();
             }
 
             app.Run();

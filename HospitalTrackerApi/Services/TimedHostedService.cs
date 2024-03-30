@@ -1,48 +1,41 @@
 ﻿namespace HospitalTrackerApi.Services
 {
-    public class TimedHostedService : IHostedService, IDisposable
+    public class TimedHostedService : BackgroundService
     {
-        private int executionCount = 0;
         private readonly ILogger<TimedHostedService> _logger;
-        private Timer _timer = null!;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        private readonly ITrackerService _trackerService;
-        public TimedHostedService(ILogger<TimedHostedService> logger, ITrackerService trackerService)
+        public TimedHostedService(ILogger<TimedHostedService> logger, IServiceScopeFactory scopeFactory)
         {
+            _scopeFactory = scopeFactory;
             _logger = logger;
-            _trackerService = trackerService;
         }
 
-        public Task StartAsync(CancellationToken stoppingToken)
+        public override Task StartAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Timed Hosted Service running.");
 
-            _timer = new Timer(DoWork, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(3));
-
-            return Task.CompletedTask;
+            return base.StartAsync(stoppingToken);
         }
 
-        private async void DoWork(object? state)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var count = Interlocked.Increment(ref executionCount);
+            using var scope = _scopeFactory.CreateScope();
+            var trackerService = scope.ServiceProvider.GetRequiredService<ITrackerService>();
 
-            await _trackerService.ChangePositions();
-
-            _logger.LogInformation("Timed Hosted Service is working. {currentdate} PeopleMoved: {Count} times", DateTime.Now.ToString(), count);
+            var timeout = TimeSpan.FromSeconds(3);
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await trackerService.ChangePositions();
+                await Task.Delay(timeout);
+            }
         }
 
-        public Task StopAsync(CancellationToken stoppingToken)
+        public override Task StopAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Timed Hosted Service is stopping.");
+            _logger.LogInformation("Timed Hosted Service stoping.");
 
-            _timer?.Change(Timeout.Infinite, 0);
-
-            return Task.CompletedTask;
-        }
-
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
+            return base.StopAsync(cancellationToken);
         }
     }
 }

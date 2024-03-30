@@ -4,7 +4,7 @@ namespace HospitalTrackerApi.Data.Seeder
 {
     public partial class HospitalTrackerDbSeeder
     {
-        public async void Seed(HospitalTrackerDbContext context)
+        public async Task Seed(HospitalTrackerDbContext context)
         {
             await SeedRolesAsync(context);
 
